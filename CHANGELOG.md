@@ -1,3 +1,11 @@
+## [0.4.11](https://github.com/LarsDekker/multiproc/compare/v0.4.10...v0.4.11) (2025-04-15)
+
+
+### Bug Fixes
+
+* correct output reference for new_tag in release workflow ([413fc71](https://github.com/LarsDekker/multiproc/commit/413fc71c7161b47f49e99aa1df98ff1b3125029c))
+* update semantic-release step to improve tag extraction and output handling ([1c83abd](https://github.com/LarsDekker/multiproc/commit/1c83abdec9c4aa87bf44ed4cf080da64b312a86c))
+
 ## [0.4.10](https://github.com/LarsDekker/multiproc/compare/v0.4.9...v0.4.10) (2025-04-15)
 
 
