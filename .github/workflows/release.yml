@@ -2,63 +2,76 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+      - staging
 
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
   build:
+    needs: release
+    if: always() && needs.release.result == 'success'
     runs-on: ubuntu-latest
     strategy:
       matrix:
         arch: [amd64, arm64]
     
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-    
-    - name: Create build directory
-      run: mkdir -p build-${{ matrix.arch }}
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Get latest release
+        id: latest_release
+        run: |
+          TAG=$(git describe --tags --abbrev=0)
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-    - name: Build in Docker
-      run: |
-        docker buildx build --platform linux/${{ matrix.arch }} \
-          --output type=local,dest=. \
-          --build-arg TARGETARCH=${{ matrix.arch }} \
-          -f Dockerfile.build .
-        
-    - name: List files (debug)
-      run: |
-        pwd
-        ls -la
-        ls -la build-${{ matrix.arch }} || true
-        find . -name multiproc
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
     
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
-      if: matrix.arch == 'amd64'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
     
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./multiproc
-        asset_name: multiproc-${{ matrix.arch }}
-        asset_content_type: application/octet-stream
+      - name: Build in Docker
+        run: |
+          docker buildx build --platform linux/${{ matrix.arch }} \
+            --output type=local,dest=. \
+            --build-arg TARGETARCH=${{ matrix.arch }} \
+            -f Dockerfile.build .
+            
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.latest_release.outputs.tag }}/assets{?name,label}
+          asset_path: ./multiproc
+          asset_name: multiproc-${{ matrix.arch }}
+          asset_content_type: application/octet-stream
