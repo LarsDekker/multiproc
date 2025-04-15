@@ -1,3 +1,12 @@
+## [0.4.10](https://github.com/LarsDekker/multiproc/compare/v0.4.9...v0.4.10) (2025-04-15)
+
+
+### Bug Fixes
+
+* clean up release workflow indentation for better readability ([8ed8072](https://github.com/LarsDekker/multiproc/commit/8ed80722359948908f406d81c5a881ea56b7448b))
+* update package.json for semantic release configuration ([95b4792](https://github.com/LarsDekker/multiproc/commit/95b4792922a43de47f60b332fcdb006af9176407))
+* update release workflow to use semantic-release for versioning ([2ee2208](https://github.com/LarsDekker/multiproc/commit/2ee2208d033354b0bd1bc3d7ec7e22d5b1ea6826))
+
 ## [0.4.9](https://github.com/LarsDekker/multiproc/compare/v0.4.8...v0.4.9) (2025-04-15)
 
 
