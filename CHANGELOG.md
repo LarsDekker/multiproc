@@ -1,3 +1,10 @@
+## [0.4.12](https://github.com/LarsDekker/multiproc/compare/v0.4.11...v0.4.12) (2025-04-15)
+
+
+### Bug Fixes
+
+* update base image in Dockerfile to use ubuntu:22.04 ([a4797c6](https://github.com/LarsDekker/multiproc/commit/a4797c6adfe9c54dc145a15c4b5cc6539981785e))
+
 ## [0.4.11](https://github.com/LarsDekker/multiproc/compare/v0.4.10...v0.4.11) (2025-04-15)
 
 
