@@ -15,7 +15,7 @@ jobs:
     name: Semantic Release
     runs-on: ubuntu-latest
     outputs:
-      new_tag: ${{ steps.set_tag.outputs.new_tag }}
+      new_tag: ${{ steps.release.outputs.new_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: "lts/*"
 
-      - name: Install semantic-release
+      - name: Install semantic-release and plugins
         run: npm install --save-dev semantic-release @semantic-release/changelog @semantic-release/github @semantic-release/git @semantic-release/commit-analyzer @semantic-release/release-notes-generator
 
       - name: Run semantic-release
@@ -42,17 +42,11 @@ jobs:
           echo "Semantic Release output:"
           cat semantic-output.log
 
-          # Extract tag using grep - first match of "Created tag vX.Y.Z"
+          # Extract created tag from output
           version=$(grep -oE 'Created tag v[0-9]+\.[0-9]+\.[0-9]+' semantic-output.log | head -n1 | awk '{print $3}')
-
           echo "Parsed release version: $version"
 
-          # Set GitHub Actions output
           echo "new_tag=$version" >> $GITHUB_OUTPUT
-      - name: Print release tag
-        run: echo "Release tag: ${{ needs.release.outputs.new_tag }}"
-
-
 
   build:
     name: Build and Upload Binaries
