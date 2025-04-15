@@ -1,25 +1,38 @@
 {
   "name": "multiproc",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "MultiProc is a simple process manager built in C++. It allows you to run multiple instances of a command and navigate their stdout using keyboard keys in the terminal.",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "release": {
+    "branches": ["main"],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/changelog",
+      [
+        "@semantic-release/github",
+        {
+          "assets": []
+        }
+      ],
+      [
+        "@semantic-release/git",
+        {
+          "assets": ["CHANGELOG.md"]
+        }
+      ]
+    ]
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/LarsDekker/multiproc.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Lars Dekker",
   "bugs": {
     "url": "https://github.com/LarsDekker/multiproc/issues"
   },
   "homepage": "https://github.com/LarsDekker/multiproc#readme",
   "devDependencies": {
-    "@semantic-release/changelog": "^6.0.3",
+    "semantic-release": "^22.0.0",
+    "@semantic-release/changelog": "^6.0.1",
+    "@semantic-release/commit-analyzer": "^10.0.1",
     "@semantic-release/git": "^10.0.1",
-    "semantic-release": "^24.2.3"
+    "@semantic-release/github": "^9.0.3",
+    "@semantic-release/release-notes-generator": "^11.0.4"
   }
 }

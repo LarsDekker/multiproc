@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - staging
 
 permissions:
   contents: write
@@ -13,12 +12,12 @@ permissions:
 
 jobs:
   release:
-    name: Release
+    name: Create Release
     runs-on: ubuntu-latest
     outputs:
-      release_id: ${{ steps.semantic.outputs.release_id }}
+      new_tag: ${{ steps.release.outputs.new_release_tag }}
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -29,17 +28,20 @@ jobs:
           node-version: "lts/*"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Create Release
-        id: semantic
+      - name: Run semantic-release
+        id: release
         uses: cycjimmy/semantic-release-action@v3
+        with:
+          semantic_version: 22
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
+    name: Build and Upload Binaries
     needs: release
-    # if: needs.release.outputs.release_id != ''
+    if: needs.release.outputs.new_tag != ''
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -49,33 +51,20 @@ jobs:
             platform: linux/amd64
           - arch: arm64
             platform: linux/arm64/v8
-    
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      
-      - name: Get release upload URL
-        id: get_upload_url
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          release_id="${{ needs.release.outputs.release_id }}"
-          upload_url=$(curl -sL \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/${release_id}" \
-            | jq -r .upload_url)
-          echo "upload_url=$upload_url" >> $GITHUB_OUTPUT
-          echo "Found upload URL: $upload_url"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-        
-      - name: Build and extract binary
+
+      - name: Build binary
         run: |
           mkdir -p dist
           docker buildx build \
@@ -84,15 +73,13 @@ jobs:
             --output type=local,dest=./dist \
             -f Dockerfile.build .
 
-      - name: List files (debug)
-        run: find dist
+      - name: Rename binary
+        run: mv dist/multiproc dist/multiproc-${{ matrix.arch }}
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Upload binary to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/multiproc-${{ matrix.arch }}
+          tag_name: ${{ needs.release.outputs.new_tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_upload_url.outputs.upload_url }}
-          asset_path: ./dist/multiproc
-          asset_name: multiproc-${{ matrix.arch }}
-          asset_content_type: application/octet-stream
