@@ -1,3 +1,10 @@
+## [0.4.6](https://github.com/LarsDekker/multiproc/compare/v0.4.5...v0.4.6) (2025-04-15)
+
+
+### Bug Fixes
+
+* update release workflow to use release_id and improve upload URL retrieval ([e86d9ff](https://github.com/LarsDekker/multiproc/commit/e86d9ffcb2a17f4d5a5af136169db0b00366aead))
+
 ## [0.4.5](https://github.com/LarsDekker/multiproc/compare/v0.4.4...v0.4.5) (2025-04-15)
 
 
