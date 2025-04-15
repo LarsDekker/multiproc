@@ -31,20 +31,28 @@ jobs:
         run: npm install --save-dev semantic-release @semantic-release/changelog @semantic-release/github @semantic-release/git @semantic-release/commit-analyzer @semantic-release/release-notes-generator
 
       - name: Run semantic-release
-        id: semantic
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npx semantic-release > semantic-output.log || true
+          set -eo pipefail
+
+          npx semantic-release > semantic-output.log
+
           echo "Semantic Release output:"
           cat semantic-output.log
-          version=$(grep -oP 'Published release \Kv[0-9]+\.[0-9]+\.[0-9]+' semantic-output.log || true)
-          echo "Parsed release version: $version"
-          echo "new_tag=$version" >> $GITHUB_OUTPUT
 
-      - name: Set tag output
-        id: set_tag
-        run: echo "new_tag=${{ steps.semantic.outputs.new_tag }}" >> $GITHUB_OUTPUT
+          # Extract tag using grep - first match of "Created tag vX.Y.Z"
+          version=$(grep -oE 'Created tag v[0-9]+\.[0-9]+\.[0-9]+' semantic-output.log | head -n1 | awk '{print $3}')
+
+          echo "Parsed release version: $version"
+
+          # Set GitHub Actions output
+          echo "new_tag=$version" >> $GITHUB_OUTPUT
+      - name: Print release tag
+        run: echo "Release tag: ${{ needs.release.outputs.new_tag }}"
+
+
 
   build:
     name: Build and Upload Binaries
