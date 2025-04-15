@@ -11,23 +11,39 @@
 #include <fcntl.h>
 #include <array>
 #include <deque>
+#include <fstream>
+#include <sstream>
+#include <regex>
+
+struct CommandConfig {
+    int processes;
+    std::string command;
+};
 
 class ProcessManager {
 public:
     struct ProcessInfo {
         pid_t pid;
         int pipe_fd[2];
+        std::string command;
         std::deque<std::string> output_lines;
         bool has_exited = false;
         int exit_status = 0;
         static const size_t MAX_LINES = 10;
     };
 
-    ProcessManager(int numProcesses, const std::string& command)
-        : numProcesses(numProcesses), command(command), currentProcessIndex(0) {}
+    ProcessManager(int maxProcesses) 
+        : maxProcesses(maxProcesses), currentProcessIndex(0) {}
+
+    void addProcess(const std::string& command) {
+        if (commands.size() >= static_cast<size_t>(maxProcesses)) {
+            throw std::runtime_error("Maximum number of processes exceeded");
+        }
+        commands.push_back(command);
+    }
 
     void startProcesses() {
-        for (int i = 0; i < numProcesses; ++i) {
+        for (const auto& command : commands) {
             ProcessInfo process_info;
             if (pipe(process_info.pipe_fd) == -1) {
                 throw std::runtime_error("Failed to create pipe");
@@ -36,7 +52,7 @@ public:
             pid_t pid = fork();
             if (pid == 0) {
                 // Child process
-                close(process_info.pipe_fd[0]); // Close read end
+                close(process_info.pipe_fd[0]);
                 dup2(process_info.pipe_fd[1], STDOUT_FILENO);
                 dup2(process_info.pipe_fd[1], STDERR_FILENO);
                 close(process_info.pipe_fd[1]);
@@ -45,9 +61,10 @@ public:
                 exit(EXIT_FAILURE);
             } else if (pid > 0) {
                 // Parent process
-                close(process_info.pipe_fd[1]); // Close write end
+                close(process_info.pipe_fd[1]);
                 fcntl(process_info.pipe_fd[0], F_SETFL, O_NONBLOCK);
                 process_info.pid = pid;
+                process_info.command = command;
                 processes.push_back(process_info);
             } else {
                 throw std::runtime_error("Failed to fork process");
@@ -253,30 +270,87 @@ public:
         exit(0);
     }
 
+    static std::vector<CommandConfig> parseConfigFile(const std::string& filename) {
+        std::vector<CommandConfig> configs;
+        std::ifstream file(filename);
+        std::string line;
+        
+        if (!file.is_open()) {
+            throw std::runtime_error("Could not open config file: " + filename);
+        }
+
+        while (std::getline(file, line)) {
+            // Skip empty lines and comments
+            if (line.empty() || line[0] == '#') {
+                continue;
+            }
+
+            // Find the first non-whitespace character
+            size_t start = line.find_first_not_of(" \t");
+            if (start == std::string::npos) {
+                continue;
+            }
+
+            // Parse the line
+            std::istringstream iss(line);
+            int processes;
+            std::string separator;
+            std::string command;
+
+            if (!(iss >> processes >> separator)) {
+                continue;
+            }
+
+            // Check for the separator
+            if (separator != "|") {
+                continue;
+            }
+
+            // Get the rest of the line as the command
+            std::getline(iss >> std::ws, command);
+            if (!command.empty()) {
+                configs.push_back({processes, command});
+            }
+        }
+
+        return configs;
+    }
+
 private:
-    int numProcesses;
-    std::string command;
+    int maxProcesses;
+    std::vector<std::string> commands;
     std::vector<ProcessInfo> processes;
     size_t currentProcessIndex;
 };
 
 int main(int argc, char* argv[]) {
-    if (argc < 4 || std::string(argv[2]) != "--") {
-        std::cerr << "Usage: multiproc {n} -- {the command}\n";
-        return 1;
-    }
-
-    int numProcesses = std::stoi(argv[1]);
-    std::string command = argv[3];
-
-    for (int i = 4; i < argc; ++i) {
-        command += " " + std::string(argv[i]);
-    }
-
     try {
-        ProcessManager manager(numProcesses, command);
+        // Look for .multiproc file in current directory
+        std::vector<CommandConfig> configs = ProcessManager::parseConfigFile(".multiproc");
+        
+        if (configs.empty()) {
+            std::cerr << "No valid commands found in .multiproc file\n";
+            return 1;
+        }
+
+        // Calculate total number of processes
+        int totalProcesses = 0;
+        for (const auto& config : configs) {
+            totalProcesses += config.processes;
+        }
+
+        // Create and start processes
+        ProcessManager manager(totalProcesses);
+        
+        for (const auto& config : configs) {
+            for (int i = 0; i < config.processes; ++i) {
+                manager.addProcess(config.command);
+            }
+        }
+
         manager.startProcesses();
         manager.displayOutput();
+
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << '\n';
         return 1;
