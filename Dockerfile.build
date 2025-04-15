@@ -1,5 +1,4 @@
-# Dockerfile.build
-
+# Stage 1: Builder
 FROM --platform=$TARGETPLATFORM ubuntu:latest as builder
 
 ARG TARGETARCH
@@ -18,8 +17,9 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release . && \
     make && \
     strip multiproc
 
-# Final output for buildx
+# Place binary in known location
 RUN mkdir -p /out && cp multiproc /out/multiproc
 
-# Set output directory
-# buildx will copy /out/* to host if --output=type=local,dest=...
+# Stage 2: Output stage for buildx
+FROM scratch AS export-stage
+COPY --from=builder /out/multiproc /multiproc

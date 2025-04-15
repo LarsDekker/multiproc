@@ -83,11 +83,10 @@ jobs:
             --build-arg TARGETARCH=${{ matrix.arch }} \
             --output type=local,dest=./dist \
             -f Dockerfile.build .
-          
+
       - name: List files (debug)
-        run: |
-          ls -la dist/
-            
+        run: find dist
+
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
