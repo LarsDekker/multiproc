@@ -14,6 +14,7 @@
 #include <fstream>
 #include <sstream>
 #include <regex>
+#include <sys/wait.h>
 
 struct CommandConfig {
     int processes;

@@ -4,8 +4,10 @@ project(multiproc)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Build static binary
-set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+# Set static linking only on Linux
+if(UNIX AND NOT APPLE)
+    set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+endif()
 
 find_package(Curses REQUIRED)
 add_executable(multiproc multiproc.cpp)
