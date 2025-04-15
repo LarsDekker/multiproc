@@ -1,3 +1,10 @@
+## [0.4.7](https://github.com/LarsDekker/multiproc/compare/v0.4.6...v0.4.7) (2025-04-15)
+
+
+### Bug Fixes
+
+* comment out conditional check for release job execution ([dbc9fb2](https://github.com/LarsDekker/multiproc/commit/dbc9fb2293b427052f948a4057cfc981af1a4d82))
+
 ## [0.4.6](https://github.com/LarsDekker/multiproc/compare/v0.4.5...v0.4.6) (2025-04-15)
 
 
