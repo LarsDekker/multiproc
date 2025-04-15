@@ -1,3 +1,10 @@
+## [0.4.8](https://github.com/LarsDekker/multiproc/compare/v0.4.7...v0.4.8) (2025-04-15)
+
+
+### Bug Fixes
+
+* streamline Dockerfile.build by improving output directory structure and comments ([1f1e5b5](https://github.com/LarsDekker/multiproc/commit/1f1e5b5636f919be23aea901ccfebca869bc3711))
+
 ## [0.4.7](https://github.com/LarsDekker/multiproc/compare/v0.4.6...v0.4.7) (2025-04-15)
 
 
