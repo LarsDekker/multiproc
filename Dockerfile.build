@@ -1,6 +1,8 @@
 # Dockerfile.build
 FROM --platform=$TARGETPLATFORM ubuntu:latest
 
+ARG TARGETARCH
+
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     g++ \
@@ -17,5 +19,5 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release . && \
     make && \
     strip multiproc
 
-# The binary will be in /build/multiproc
-# Docker buildx will copy the contents of /build to the dest directory
+# Copy the binary to the root
+RUN cp multiproc /multiproc

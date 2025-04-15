@@ -24,12 +24,22 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
     
+    - name: Create build directory
+      run: mkdir -p build-${{ matrix.arch }}
+
     - name: Build in Docker
       run: |
-        mkdir -p build-${{ matrix.arch }}
         docker buildx build --platform linux/${{ matrix.arch }} \
-          --output type=local,dest=./build-${{ matrix.arch }} \
+          --output type=local,dest=. \
+          --build-arg TARGETARCH=${{ matrix.arch }} \
           -f Dockerfile.build .
+        
+    - name: List files (debug)
+      run: |
+        pwd
+        ls -la
+        ls -la build-${{ matrix.arch }} || true
+        find . -name multiproc
     
     - name: Create Release
       id: create_release
@@ -41,7 +51,7 @@ jobs:
         release_name: Release ${{ github.ref_name }}
         draft: false
         prerelease: false
-      if: matrix.arch == 'amd64'  # Only create release once
+      if: matrix.arch == 'amd64'
     
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
@@ -49,6 +59,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build-${{ matrix.arch }}/multiproc
+        asset_path: ./multiproc
         asset_name: multiproc-${{ matrix.arch }}
         asset_content_type: application/octet-stream
