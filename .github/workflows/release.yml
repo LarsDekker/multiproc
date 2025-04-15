@@ -39,7 +39,7 @@ jobs:
 
   build:
     needs: release
-    if: needs.release.outputs.release_id != ''
+    # if: needs.release.outputs.release_id != ''
     runs-on: ubuntu-latest
     strategy:
       matrix:
