@@ -17,5 +17,5 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release . && \
     make && \
     strip multiproc
 
-# Copy to output
-CMD cp multiproc /output/
+# The binary will be in /build/multiproc
+# Docker buildx will copy the contents of /build to the dest directory
