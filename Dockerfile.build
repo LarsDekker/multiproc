@@ -1,7 +1,8 @@
 # Dockerfile.build
-FROM --platform=$TARGETPLATFORM ubuntu:latest
+FROM --platform=$TARGETPLATFORM ubuntu:latest as builder
 
 ARG TARGETARCH
+ARG TARGETPLATFORM
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -19,5 +20,8 @@ RUN cmake -DCMAKE_BUILD_TYPE=Release . && \
     make && \
     strip multiproc
 
-# Copy the binary to the root
-RUN cp multiproc /multiproc
+# Create final output
+RUN mkdir -p /output && \
+    cp multiproc /output/
+
+# The binary will be copied from /output by buildx

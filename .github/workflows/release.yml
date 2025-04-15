@@ -15,6 +15,9 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_url: ${{ steps.semantic.outputs.url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -30,48 +33,62 @@ jobs:
         run: npm install
 
       - name: Create Release
+        id: semantic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
 
   build:
     needs: release
-    if: always() && needs.release.result == 'success'
+    if: needs.release.outputs.new_release_published == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
         arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: arm64
+            platform: linux/arm64/v8
     
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       
-      - name: Get latest release
-        id: latest_release
+      - name: Get release info
+        id: release_info
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=$(git describe --tags --abbrev=0)
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          release_url="${{ needs.release.outputs.new_release_url }}"
+          echo "upload_url=$(curl -H "Authorization: token $GITHUB_TOKEN" -s ${release_url} | jq -r .upload_url)" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
-    
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-    
-      - name: Build in Docker
+        
+      - name: Build and extract binary
         run: |
-          docker buildx build --platform linux/${{ matrix.arch }} \
-            --output type=local,dest=. \
+          mkdir -p dist
+          docker buildx build \
+            --platform ${{ matrix.platform }} \
             --build-arg TARGETARCH=${{ matrix.arch }} \
+            --output type=local,dest=./dist \
             -f Dockerfile.build .
+          
+      - name: List files (debug)
+        run: |
+          ls -la dist/
             
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.latest_release.outputs.tag }}/assets{?name,label}
-          asset_path: ./multiproc
+          upload_url: ${{ steps.release_info.outputs.upload_url }}
+          asset_path: ./dist/multiproc
           asset_name: multiproc-${{ matrix.arch }}
           asset_content_type: application/octet-stream
